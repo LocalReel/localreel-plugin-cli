@@ -11,6 +11,9 @@ a zip with `manifest.json` at its root.
 See the protocol reference:
 <https://github.com/LocalReel/localreel-core/blob/main/docs/plugin-protocol.md>
 
+A complete provider built with this tool:
+<https://github.com/LocalReel/localreel-plugin-strm>
+
 ## Commands
 
 ### `new`
