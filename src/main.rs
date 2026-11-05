@@ -127,6 +127,9 @@ fn main() {
                 }
             }
         }
+        "--version" | "-V" => {
+            println!("localreel-plugin-cli {}", env!("CARGO_PKG_VERSION"));
+        }
         "--help" | "-h" | "help" => {
             println!(
                 "usage:\n  localreel-plugin-cli new <id> [--dir <dir>] [--name <name>]\n  localreel-plugin-cli pack <dir> --out <file> [--force]\n  localreel-plugin-cli inspect <file>"

@@ -16,13 +16,28 @@ A complete provider built with this tool:
 
 ## Install
 
-Prebuilt binaries are published as GitHub releases:
+Prebuilt binaries are published as GitHub releases for Windows x64, Linux
+x64/arm64 and macOS x64/arm64.
 
-- Windows x64: `localreel-plugin-cli-windows-x64.zip`
-- Linux x64: `localreel-plugin-cli-linux-x64.tar.gz`
+Windows (PowerShell):
 
-Unpack the archive and run `localreel-plugin-cli --help`. Building from source
-is also supported: `cargo build --release`.
+```powershell
+irm https://raw.githubusercontent.com/LocalReel/localreel-plugin-cli/main/scripts/install.ps1 | iex
+# add -AddToPath when passing the script explicitly:
+# .\install.ps1 -AddToPath
+```
+
+Linux and macOS:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/LocalReel/localreel-plugin-cli/main/scripts/install.sh | sh
+```
+
+The scripts verify the published `.sha256` and install to
+`%LOCALAPPDATA%\localreel-plugin-cli` (Windows) or `~/.local/bin` (Unix). You can
+also download an archive from
+[Releases](https://github.com/LocalReel/localreel-plugin-cli/releases) manually.
+Building from source is supported too: `cargo build --release`.
 
 ## Commands
 
@@ -104,7 +119,16 @@ LocalReel 插件命令行工具，用来生成、校验、打包 sidecar 插件�
   （同样输入得到同样的 SHA-256）；
 - `inspect`：不下载、不解压，直接读取包内 manifest。
 
-预编译二进制发布在 Releases（Windows x64 zip、Linux x64 tar.gz），解压即可用；
+预编译二进制发布在 Releases（Windows x64、Linux x64/arm64、macOS x64/arm64），
+也可以用安装脚本：
+
+```sh
+# Windows PowerShell
+irm https://raw.githubusercontent.com/LocalReel/localreel-plugin-cli/main/scripts/install.ps1 | iex
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/LocalReel/localreel-plugin-cli/main/scripts/install.sh | sh
+```
+
 也可以 `cargo build --release` 自行构建。
 
 插件协议见
