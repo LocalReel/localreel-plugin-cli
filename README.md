@@ -14,6 +14,16 @@ See the protocol reference:
 A complete provider built with this tool:
 <https://github.com/LocalReel/localreel-plugin-strm>
 
+## Install
+
+Prebuilt binaries are published as GitHub releases:
+
+- Windows x64: `localreel-plugin-cli-windows-x64.zip`
+- Linux x64: `localreel-plugin-cli-linux-x64.tar.gz`
+
+Unpack the archive and run `localreel-plugin-cli --help`. Building from source
+is also supported: `cargo build --release`.
+
 ## Commands
 
 ### `new`
@@ -93,6 +103,9 @@ LocalReel 插件命令行工具，用来生成、校验、打包 sidecar 插件�
 - `pack`：校验 manifest、检查入口程序、拒绝符号链接与越界路径，生成确定性 zip
   （同样输入得到同样的 SHA-256）；
 - `inspect`：不下载、不解压，直接读取包内 manifest。
+
+预编译二进制发布在 Releases（Windows x64 zip、Linux x64 tar.gz），解压即可用；
+也可以 `cargo build --release` 自行构建。
 
 插件协议见
 [plugin-protocol.md](https://github.com/LocalReel/localreel-core/blob/main/docs/plugin-protocol.md)。

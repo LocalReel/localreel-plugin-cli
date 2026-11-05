@@ -1,0 +1,73 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: localreel-plugin-cli-windows-x64.zip
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: localreel-plugin-cli-linux-x64.tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $stage = "localreel-plugin-cli-${{ github.ref_name }}-windows-x64"
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/localreel-plugin-cli.exe" $stage
+          Copy-Item README.md, LICENSE $stage
+          Compress-Archive -Path "$stage/*" -DestinationPath "${{ matrix.archive }}"
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          stage="localreel-plugin-cli-${GITHUB_REF_NAME}-linux-x64"
+          mkdir -p "$stage"
+          cp "target/${{ matrix.target }}/release/localreel-plugin-cli" "$stage/"
+          cp README.md LICENSE "$stage/"
+          tar -czf "${{ matrix.archive }}" "$stage"
+
+      - name: Checksum
+        shell: bash
+        run: |
+          sha256sum "${{ matrix.archive }}" > "${{ matrix.archive }}.sha256"
+          cat "${{ matrix.archive }}.sha256"
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          body: |
+            Prebuilt binaries for `localreel-plugin-cli`.
+
+            - Windows x64: `localreel-plugin-cli-windows-x64.zip`
+            - Linux x64: `localreel-plugin-cli-linux-x64.tar.gz`
+
+            Each archive contains the CLI, the README and the license. Build the
+            plugin itself with the Rust tools the generated project expects.
+          files: |
+            ${{ matrix.archive }}
+            ${{ matrix.archive }}.sha256
