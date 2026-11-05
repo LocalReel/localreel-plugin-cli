@@ -27,7 +27,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64
             archive: localreel-plugin-cli-linux-arm64.tar.gz
-          - os: macos-13
+          - os: macos-14
             target: x86_64-apple-darwin
             platform: macos-x64
             archive: localreel-plugin-cli-macos-x64.tar.gz
@@ -58,7 +58,7 @@ jobs:
       - name: Build
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-        run: cargo build --release --locked --target "$TARGET"
+        run: cargo build --release --locked --target "${{ matrix.target }}"
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
