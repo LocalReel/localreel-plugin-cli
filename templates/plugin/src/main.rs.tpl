@@ -110,13 +110,13 @@ fn entries(
     let mut items = Vec::new();
     if recursive {
         for entry in walkdir_like(&path) {
-            if let Some(item) = describe(root, &entry) {
+            if let Some(item) = describe(&entry) {
                 items.push(item);
             }
         }
     } else if let Ok(directory) = std::fs::read_dir(&path) {
         for entry in directory.flatten() {
-            if let Some(item) = describe(root, &entry.path()) {
+            if let Some(item) = describe(&entry.path()) {
                 items.push(item);
             }
         }
@@ -143,7 +143,7 @@ fn walkdir_like(root: &Path) -> Vec<PathBuf> {
     files
 }
 
-fn describe(root: &Path, path: &Path) -> Option<Value> {
+fn describe(path: &Path) -> Option<Value> {
     let metadata = std::fs::metadata(path).ok()?;
     let name = path.file_name()?.to_string_lossy().into_owned();
     // Absolute file URIs let the host probe local files directly. Windows
