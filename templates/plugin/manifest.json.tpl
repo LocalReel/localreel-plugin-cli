@@ -4,6 +4,6 @@
   "version": "0.1.0",
   "api_version": "localreel.plugin/v1",
   "kind": "storage",
-  "entry": { "program": "bin/plugin{{exe_suffix}}", "args": [] },
+  "entry": { "program": "{{program}}", "args": [] },
   "permissions": ["network"]
 }

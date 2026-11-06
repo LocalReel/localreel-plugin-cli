@@ -45,9 +45,13 @@ Building from source is supported too: `cargo build --release`.
 
 ```sh
 localreel-plugin-cli new example --dir plugins/example --name "Example storage"
+localreel-plugin-cli new example --lang node --dir plugins/example
+localreel-plugin-cli new example --lang python --dir plugins/example
 ```
 
-Writes a complete Rust project:
+`--lang` accepts `rust` (default), `node` and `python`.
+
+Rust projects contain a crate and compile to a self-contained binary:
 
 ```text
 plugins/example/
@@ -59,9 +63,21 @@ plugins/example/
 └── README.md
 ```
 
-`manifest.json` uses api version `localreel.plugin/v1`, kind `storage`, and entry
-`bin/plugin` (`.exe` on Windows). Edit `src/main.rs` to implement your provider;
-the generated code is a working starting point.
+Node.js and Python projects have no compile step; the build script only stages
+the manifest and the script:
+
+```text
+plugins/example/
+├── manifest.json    # entry.runtime = "node" or "python3"
+├── plugin.js        # or plugin.py
+├── build.ps1
+├── build.sh
+└── README.md
+```
+
+The manifest then carries `entry.runtime`; the host runs `node plugin.js` (or
+`python plugin.py`) and needs that interpreter on `PATH`. Edit the generated
+script to implement your provider.
 
 ### `build` (generated project)
 
@@ -69,7 +85,8 @@ the generated code is a working starting point.
 ./build.sh            # Windows: .\build.ps1
 ```
 
-This compiles the crate and writes `pkg/manifest.json` plus `pkg/bin/plugin`.
+Rust projects compile the crate and write `pkg/manifest.json` plus
+`pkg/bin/plugin`; script projects copy the manifest and the script into `pkg/`.
 
 ### `pack`
 

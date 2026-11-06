@@ -64,6 +64,9 @@ pub struct Entry {
     pub program: String,
     #[serde(default)]
     pub args: Vec<String>,
+    /// Optional interpreter (`node`, `python3`, ...) used to run the program.
+    #[serde(default)]
+    pub runtime: Option<String>,
 }
 
 impl Manifest {
@@ -101,6 +104,22 @@ impl Manifest {
             ));
         }
         validate_relative_program(&self.entry.program)?;
+        if let Some(runtime) = &self.entry.runtime {
+            let valid = !runtime.is_empty()
+                && runtime.len() <= 64
+                && runtime
+                    .chars()
+                    .next()
+                    .is_some_and(|ch| ch.is_ascii_alphanumeric())
+                && runtime
+                    .chars()
+                    .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'));
+            if !valid {
+                return Err(Error::Manifest(
+                    "entry runtime must be a bare command name (no path separators)".into(),
+                ));
+            }
+        }
         if self.entry.args.len() > 32 || self.entry.args.iter().any(|arg| arg.contains('\0')) {
             return Err(Error::Manifest(
                 "entry args are invalid (max 32, no NUL)".into(),

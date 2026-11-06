@@ -9,7 +9,7 @@ use std::path::PathBuf;
 fn usage(message: &str) -> ! {
     eprintln!("{message}");
     eprintln!(
-        "usage:\n  localreel-plugin-cli new <id> [--dir <dir>] [--name <name>]\n  localreel-plugin-cli pack <dir> --out <file> [--force]\n  localreel-plugin-cli inspect <file>"
+        "usage:\n  localreel-plugin-cli new <id> [--dir <dir>] [--name <name>] [--lang rust|node|python]\n  localreel-plugin-cli pack <dir> --out <file> [--force]\n  localreel-plugin-cli inspect <file>"
     );
     std::process::exit(2);
 }
@@ -31,23 +31,29 @@ fn main() {
                 .unwrap_or_else(|| usage("new needs a plugin id"));
             let mut dir: Option<PathBuf> = None;
             let mut name: Option<String> = None;
+            let mut language = scaffold::Language::Rust;
             while let Some(flag) = args.next() {
                 match flag.as_str() {
                     "--dir" => dir = Some(PathBuf::from(value(&mut args, "--dir"))),
                     "--name" => name = Some(value(&mut args, "--name")),
+                    "--lang" => {
+                        let raw = value(&mut args, "--lang");
+                        language = scaffold::Language::parse(&raw)
+                            .unwrap_or_else(|error| usage(&error.to_string()));
+                    }
                     other => usage(&format!("unknown argument {other:?}")),
                 }
             }
             let dir = dir.unwrap_or_else(|| PathBuf::from(&id));
             let name = name.unwrap_or_else(|| id.clone());
-            match scaffold::create(&id, &name, &dir) {
+            match scaffold::create(&id, &name, &dir, language) {
                 Ok(created) => {
                     println!(
-                        "created plugin {} in {} ({} files, crate {})",
+                        "created plugin {} in {} ({} files, {})",
                         id,
                         created.dir.display(),
                         created.files.len(),
-                        created.crate_name
+                        created.language.as_str()
                     );
                     println!(
                         "next: cd {} && {} && localreel-plugin-cli pack pkg --out dist/{}.lrplug",
@@ -132,7 +138,7 @@ fn main() {
         }
         "--help" | "-h" | "help" => {
             println!(
-                "usage:\n  localreel-plugin-cli new <id> [--dir <dir>] [--name <name>]\n  localreel-plugin-cli pack <dir> --out <file> [--force]\n  localreel-plugin-cli inspect <file>"
+                "usage:\n  localreel-plugin-cli new <id> [--dir <dir>] [--name <name>] [--lang rust|node|python]\n  localreel-plugin-cli pack <dir> --out <file> [--force]\n  localreel-plugin-cli inspect <file>"
             );
         }
         other => usage(&format!("unknown command {other:?}")),
