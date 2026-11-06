@@ -1,0 +1,65 @@
+name: templates
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  template:
+    name: template (${{ matrix.lang }}, ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        lang: [rust, node, python]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Scaffold
+        shell: bash
+        run: |
+          cargo run --release --locked -- new template-${{ matrix.lang }} \
+            --lang ${{ matrix.lang }} --dir template
+
+      - name: Build the generated plugin
+        shell: bash
+        run: |
+          cd template
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            powershell -NoProfile -ExecutionPolicy Bypass -File build.ps1
+          else
+            sh build.sh
+          fi
+
+      - name: Pack and inspect
+        shell: bash
+        run: |
+          cargo run --release --locked -- pack template/pkg --out template.lrplug
+          cargo run --release --locked -- inspect template.lrplug | tee inspect.txt
+
+          case "${{ matrix.lang }}" in
+            rust)
+              expected="bin/plugin"
+              if [ "$RUNNER_OS" = "Windows" ]; then expected="bin/plugin.exe"; fi
+              ;;
+            node) expected="plugin.js" ;;
+            python) expected="plugin.py" ;;
+          esac
+          grep -q "entry: $expected" inspect.txt || {
+            echo "expected entry $expected" >&2
+            exit 1
+          }
+          test -f template.lrplug
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-${{ matrix.lang }}-${{ matrix.os }}
+          path: template.lrplug
+          if-no-files-found: error
