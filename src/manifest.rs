@@ -68,6 +68,13 @@ pub struct Entry {
     /// Optional interpreter (`node`, `python3`, ...) used to run the program.
     #[serde(default)]
     pub runtime: Option<String>,
+    /// `http` (default, loopback TCP) or `stdio` (pipe JSON-RPC).
+    #[serde(default = "default_transport")]
+    pub transport: String,
+}
+
+fn default_transport() -> String {
+    "http".to_string()
 }
 
 impl Manifest {
@@ -120,6 +127,11 @@ impl Manifest {
                     "entry runtime must be a bare command name (no path separators)".into(),
                 ));
             }
+        }
+        if !matches!(self.entry.transport.as_str(), "http" | "stdio") {
+            return Err(Error::Manifest(
+                "entry transport must be 'http' or 'stdio'".into(),
+            ));
         }
         if self.entry.args.len() > 32 || self.entry.args.iter().any(|arg| arg.contains('\0')) {
             return Err(Error::Manifest(
@@ -220,6 +232,18 @@ mod tests {
         let manifest = Manifest::parse(manifest("example", "bin/plugin").as_bytes()).unwrap();
         assert_eq!(manifest.id, "example");
         assert_eq!(manifest.kind, PluginKind::Storage);
+    }
+
+    #[test]
+    fn accepts_stdio_transport_and_rejects_unknown_ones() {
+        let mut value: serde_json::Value =
+            serde_json::from_str(&manifest("example", "bin/plugin")).unwrap();
+        value["entry"]["transport"] = serde_json::json!("stdio");
+        let parsed = Manifest::parse(value.to_string().as_bytes()).unwrap();
+        assert_eq!(parsed.entry.transport, "stdio");
+
+        value["entry"]["transport"] = serde_json::json!("carrier-pigeon");
+        assert!(Manifest::parse(value.to_string().as_bytes()).is_err());
     }
 
     #[test]

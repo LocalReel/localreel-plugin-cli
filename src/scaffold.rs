@@ -86,6 +86,7 @@ pub fn create(id: &str, name: &str, dir: &Path, language: Language) -> Result<Cr
             program: program.clone(),
             args: Vec::new(),
             runtime: runtime.map(str::to_string),
+            transport: "http".into(),
         },
         permissions: vec![PERMISSION_NETWORK.into()],
         description: None,
