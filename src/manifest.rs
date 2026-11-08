@@ -12,7 +12,8 @@ pub const MAX_PACKAGE_BYTES: u64 = 64 * 1024 * 1024;
 pub const MAX_EXTRACTED_BYTES: u64 = 256 * 1024 * 1024;
 pub const MAX_PACKAGE_ENTRIES: usize = 4096;
 pub const PERMISSION_NETWORK: &str = "network";
-pub const ALLOWED_PERMISSIONS: &[&str] = &[PERMISSION_NETWORK];
+pub const PERMISSION_STORAGE_READ: &str = "storage:read";
+pub const ALLOWED_PERMISSIONS: &[&str] = &[PERMISSION_NETWORK, PERMISSION_STORAGE_READ];
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -251,6 +252,22 @@ mod tests {
                 "{program}"
             );
         }
+    }
+
+    #[test]
+    fn accepts_storage_read_from_the_host_contract() {
+        let json = serde_json::json!({
+            "id": "example",
+            "name": "Example",
+            "version": "0.1.0",
+            "api_version": API_VERSION,
+            "kind": "storage",
+            "entry": { "program": "bin/plugin" },
+            "permissions": ["storage:read", "network"]
+        })
+        .to_string();
+        let manifest = Manifest::parse(json.as_bytes()).unwrap();
+        assert!(manifest.permissions.contains(&"storage:read".to_string()));
     }
 
     #[test]
