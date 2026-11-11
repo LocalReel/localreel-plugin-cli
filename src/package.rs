@@ -70,6 +70,48 @@ pub fn pack(source: &Path, output: &Path) -> Result<PackReport, Error> {
         .map_err(|_| Error::Missing("manifest.json".into()))?;
     let manifest = Manifest::parse(&manifest_bytes)?;
     let program = PathBuf::from(&manifest.entry.program);
+    // Outputs must live outside the input tree. This also excludes stale output
+    // and temporary archives on repeated packs, and protects every source file
+    // (not just the manifest and executable) from accidental replacement.
+    let parent = output
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    // Check the nearest existing ancestor before creating missing output
+    // directories, so a rejected source-local output does not alter the input.
+    let absolute_parent = if parent.is_absolute() {
+        parent.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map_err(|error| Error::Io(error.to_string()))?
+            .join(parent)
+    };
+    let ancestor = absolute_parent
+        .ancestors()
+        .find(|path| path.exists())
+        .ok_or_else(|| Error::Io("output directory has no existing ancestor".into()))?;
+    if ancestor
+        .canonicalize()
+        .map_err(|error| Error::Io(error.to_string()))?
+        .starts_with(&source)
+    {
+        return Err(Error::UnsafeEntry(
+            "package output must be outside the source directory".into(),
+        ));
+    }
+    std::fs::create_dir_all(parent).map_err(|error| Error::Io(error.to_string()))?;
+    let output_parent = parent
+        .canonicalize()
+        .map_err(|error| Error::Io(format!("cannot resolve output directory: {error}")))?;
+    if output_parent.starts_with(&source)
+        || output
+            .canonicalize()
+            .is_ok_and(|path| path.starts_with(&source))
+    {
+        return Err(Error::UnsafeEntry(
+            "package output must be outside the source directory".into(),
+        ));
+    }
     let mut files = collect_files(&source)?;
     if !files.iter().any(|path| path == &program) {
         return Err(Error::Missing(manifest.entry.program.clone()));
@@ -213,6 +255,27 @@ fn sha256_file(path: &Path) -> Result<String, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rejects_outputs_inside_source_without_overwriting_inputs() {
+        let root = tempfile::tempdir().unwrap();
+        let source = plugin_dir(root.path());
+        let original = std::fs::read(source.join("manifest.json")).unwrap();
+        for relative in ["manifest.json", "bin/plugin", "output.lrplug"] {
+            assert!(pack(&source, &source.join(relative)).is_err());
+        }
+        assert_eq!(
+            std::fs::read(source.join("manifest.json")).unwrap(),
+            original
+        );
+        assert!(pack(&source, &source.join("new/sub/output.lrplug")).is_err());
+        assert!(!source.join("new").exists());
+        let output = root.path().join("dist/nested/output.lrplug");
+        let first = pack(&source, &output).unwrap();
+        let second = pack(&source, &output).unwrap();
+        assert_eq!(first.sha256, second.sha256);
+        assert_eq!(first.files, second.files);
+    }
 
     fn plugin_dir(root: &Path) -> PathBuf {
         let dir = root.join("plugin");

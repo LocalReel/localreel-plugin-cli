@@ -16,6 +16,9 @@ A complete provider built with this tool:
 
 ## Install
 
+Building the CLI from source requires **Rust 1.88 or newer** (including the
+locked compression dependencies). CI checks this minimum with `--locked`.
+
 Prebuilt binaries are published as GitHub releases for Windows x64, Linux
 x64/arm64 and macOS x64/arm64.
 
@@ -97,6 +100,8 @@ localreel-plugin-cli pack pkg --out dist/example.lrplug
 - reads and validates `manifest.json`;
 - requires the entry program to exist inside the directory;
 - rejects symlinks, `..`, absolute paths and Windows drive prefixes;
+- requires output outside the source directory, preventing input overwrites and
+  inclusion of an older package when packing again;
 - writes entries sorted with fixed timestamps, so the same input produces the
   same SHA-256;
 - prints the file count, size and SHA-256; `--force` replaces an existing file.
